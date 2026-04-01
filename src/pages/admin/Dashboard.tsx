@@ -8,11 +8,12 @@ import CompanyCreateDialog from "./CompanyCreateDialog"; // Dialog component for
 import AdminUsersTab from "./AdminUsersTab";
 import AdminSystemTab from "./AdminSystemTab";
 import AdminAIConfigTab from "./AdminAIConfigTab";
+import AdminGovernanceTab from "./AdminGovernanceTab";
 import apiClient from "../../libs/api";
 import { useAppSelector } from "../../store";
 import toast from "react-hot-toast"; // For user feedback when sending emails
 
-type AdminTab = "overview" | "users" | "system" | "ai";
+type AdminTab = "overview" | "users" | "system" | "ai" | "governance";
 
 // Interface defining the shape of company data
 interface ICompany {
@@ -124,6 +125,7 @@ function Dashboard() {
     { id: "users", label: "Users" },
     { id: "system", label: "System" },
     { id: "ai", label: "AI config" },
+    { id: "governance", label: "Governance" },
   ];
 
 
@@ -201,6 +203,7 @@ function Dashboard() {
       {activeTab === "users" && <AdminUsersTab />}
       {activeTab === "system" && <AdminSystemTab />}
       {activeTab === "ai" && <AdminAIConfigTab />}
+      {activeTab === "governance" && <AdminGovernanceTab />}
 
       {activeTab === "overview" && (
       <>

@@ -39,6 +39,7 @@ import {
 import axios from "axios";
 import apiClient from "../../libs/api";
 import toast from "react-hot-toast";
+import { useWebSpeechTranscript } from "../../hooks/useWebSpeechTranscript";
 
 interface ITabItem {
   title: string; // Title of the tab
@@ -91,6 +92,9 @@ const RoomPage: React.FC = () => {
   >([]);
   const [sessionTranscript, setSessionTranscript] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
+  const [consentDocumentation, setConsentDocumentation] = useState(false);
+  const [visibleToPatient, setVisibleToPatient] = useState(false);
+  const speech = useWebSpeechTranscript("sv-SE");
 
   // Function to handle tab click
   const handleTabItemClick =
@@ -428,40 +432,117 @@ const RoomPage: React.FC = () => {
           )}
 
           <div className="bg-white rounded-lg p-4 flex flex-col gap-2 border border-primary-border/15">
-            <p className="text-sm font-bold text-primary-background">Post-meeting AI report</p>
+            <p className="text-sm font-bold text-primary-background">Dokumentation efter samtal (AI)</p>
             <p className="text-xs text-disabled-text">
-              Paste a session transcript (or notes). Generates a structured summary stored on the patient
-              timeline when linked.
+              Klistra in utskrift eller anteckningar. Web Speech (Chrome) är ett stöd — för produktion rekommenderas
+              server-STT. Rapporter sparas som Markdown och PDF i ditt arkiv (mapp meetings_ai).
             </p>
+            <div className="flex flex-wrap gap-2 items-center">
+              {speech.supported ? (
+                <button
+                  type="button"
+                  className="px-3 py-1 rounded-lg border border-primary-border text-sm"
+                  onClick={() => {
+                    if (speech.listening) speech.stop();
+                    else
+                      speech.start((chunk) =>
+                        setSessionTranscript((t) => t + chunk)
+                      );
+                  }}
+                >
+                  {speech.listening ? "Stoppa diktering" : "Starta diktering (webbläsare)"}
+                </button>
+              ) : (
+                <span className="text-xs text-disabled-text">Web Speech stöds inte i denna webbläsare.</span>
+              )}
+            </div>
             <textarea
               className="w-full min-h-[100px] rounded-lg border border-primary-border/25 p-2 text-sm"
               value={sessionTranscript}
               onChange={(e) => setSessionTranscript(e.target.value)}
-              placeholder="Transcript or session notes…"
+              placeholder="Transkript eller anteckningar…"
             />
-            <button
-              type="button"
-              disabled={aiBusy || !sessionTranscript.trim()}
-              className="self-end px-4 py-2 rounded-lg bg-primary-background text-white text-sm disabled:opacity-40"
-              onClick={async () => {
-                setAiBusy(true);
-                try {
-                  const pid = roomInfo?.patient_personal_id || "";
-                  await apiClient.post("/api/meeting_ai/transcript", {
-                    room_name: roomName,
-                    transcript: sessionTranscript,
-                    patient_personal_id: pid || undefined,
-                  });
-                  toast.success("AI pipeline queued — check notifications when ready");
-                } catch {
-                  toast.error("Could not generate report");
-                } finally {
-                  setAiBusy(false);
-                }
-              }}
-            >
-              {aiBusy ? "Working…" : "Generate AI report"}
-            </button>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consentDocumentation}
+                onChange={(e) => setConsentDocumentation(e.target.checked)}
+              />
+              Jag bekräftar att vårdnadshavare/patient informerats om AI-stödd dokumentation enligt policy.
+            </label>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={visibleToPatient}
+                onChange={(e) => setVisibleToPatient(e.target.checked)}
+              />
+              Visa sammanfattning i patientportalen (kräver personnummer på rummet)
+            </label>
+            <div className="flex flex-wrap gap-2 justify-end">
+              <button
+                type="button"
+                disabled={aiBusy || !sessionTranscript.trim()}
+                className="px-4 py-2 rounded-lg bg-light-background text-primary-text text-sm disabled:opacity-40"
+                onClick={async () => {
+                  setAiBusy(true);
+                  try {
+                    const pid = roomInfo?.patient_personal_id || "";
+                    await apiClient.post("/api/meeting_ai/transcript", {
+                      room_name: roomName,
+                      transcript: sessionTranscript,
+                      patient_personal_id: pid || undefined,
+                    });
+                    toast.success("Klassisk AI-kö — se aviseringar");
+                  } catch {
+                    toast.error("Kunde inte köa (meeting_ai)");
+                  } finally {
+                    setAiBusy(false);
+                  }
+                }}
+              >
+                Köa (äldre flöde)
+              </button>
+              <button
+                type="button"
+                disabled={aiBusy || !sessionTranscript.trim()}
+                className="px-4 py-2 rounded-lg bg-primary-background text-white text-sm disabled:opacity-40"
+                onClick={async () => {
+                  setAiBusy(true);
+                  try {
+                    const pid = roomInfo?.patient_personal_id || "";
+                    await apiClient.post("/api/meetings_ai/generate", {
+                      room_name: roomName,
+                      transcript: sessionTranscript,
+                      patient_personal_id: pid || undefined,
+                      consent_documentation: consentDocumentation,
+                      visible_to_patient: visibleToPatient,
+                      async: false,
+                    });
+                    toast.success("Klinisk rapport sparad (MD + PDF)");
+                    try {
+                      await apiClient.post("/api/meetings_ai/transcript", {
+                        room_name: roomName,
+                        transcript: sessionTranscript,
+                        source: "pre_generate",
+                      });
+                    } catch {
+                      /* optional audit copy */
+                    }
+                  } catch (e: unknown) {
+                    const err = e as { response?: { data?: { error?: string } } };
+                    if (err?.response?.data?.error === "consent_documentation must be true") {
+                      toast.error("Kryssa i samtycke för dokumentation.");
+                    } else {
+                      toast.error("Kunde inte generera rapport");
+                    }
+                  } finally {
+                    setAiBusy(false);
+                  }
+                }}
+              >
+                {aiBusy ? "Arbetar…" : "Generera klinisk rapport (Phase 3)"}
+              </button>
+            </div>
           </div>
 
           {/* Video call component with share functionality */}

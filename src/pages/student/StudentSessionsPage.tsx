@@ -16,6 +16,14 @@ interface UpcomingEvent {
   description?: string;
 }
 
+interface PatientVisibleReport {
+  _id: string;
+  room_name?: string;
+  created_at?: string;
+  pdf_file_id?: string;
+  retention_until?: string;
+}
+
 /**
  * Patient/student portal: upcoming sessions from the events API,
  * scoped by the same patient password used for the video room.
@@ -25,6 +33,7 @@ function StudentSessionsPage() {
   const [loading, setLoading] = useState(false);
   const [events, setEvents] = useState<UpcomingEvent[]>([]);
   const [roomName, setRoomName] = useState<string | null>(null);
+  const [visibleReports, setVisibleReports] = useState<PatientVisibleReport[]>([]);
 
   const load = () => {
     if (!password.trim()) {
@@ -32,19 +41,27 @@ function StudentSessionsPage() {
       return;
     }
     setLoading(true);
-    apiClient
-      .post("/api/events/patient-upcoming", { patient_password: password })
-      .then((res: unknown) => {
-        const r = res as { room_name?: string; events?: UpcomingEvent[] };
-        setRoomName(r.room_name ?? null);
-        setEvents(r.events || []);
-        if (!r.events?.length) {
+    const pwd = password.trim();
+    Promise.all([
+      apiClient.post("/api/events/patient-upcoming", { patient_password: pwd }),
+      apiClient
+        .post("/api/meetings_ai/patient-visible", { patient_password: pwd })
+        .catch(() => ({ reports: [] as PatientVisibleReport[] })),
+    ])
+      .then(([upcoming, vis]) => {
+        const u = upcoming as { room_name?: string; events?: UpcomingEvent[] };
+        setRoomName(u.room_name ?? null);
+        setEvents(u.events || []);
+        const v = vis as { reports?: PatientVisibleReport[] };
+        setVisibleReports(v.reports || []);
+        if (!u.events?.length) {
           toast.success("Inga kommande sessioner hittades.");
         }
       })
       .catch(() => {
         setEvents([]);
         setRoomName(null);
+        setVisibleReports([]);
         toast.error("Kunde inte hämta sessioner. Kontrollera lösenordet.");
       })
       .finally(() => setLoading(false));
@@ -103,6 +120,42 @@ function StudentSessionsPage() {
             </li>
           ))}
         </ul>
+
+        {visibleReports.length > 0 && (
+          <div className="border-t border-primary-border/15 pt-4">
+            <h2 className="text-sm font-bold text-primary-text">Dokumentation delad med dig</h2>
+            <p className="text-xs text-disabled-text mt-1 mb-3">
+              Sammanfattningar som din vårdgivare valt att visa i portalen (PDF).
+            </p>
+            <ul className="flex flex-col gap-2 max-h-56 overflow-y-auto">
+              {visibleReports.map((rep) => (
+                <li
+                  key={rep._id}
+                  className="rounded-lg border border-primary-border/20 p-3 text-sm flex flex-wrap items-center justify-between gap-2"
+                >
+                  <div>
+                    <p className="font-medium text-primary-text">{rep.room_name || "Session"}</p>
+                    {rep.created_at ? (
+                      <p className="text-xs text-disabled-text">
+                        {new Date(rep.created_at).toLocaleString("sv-SE")}
+                      </p>
+                    ) : null}
+                  </div>
+                  {rep.pdf_file_id ? (
+                    <a
+                      href={`${apiClient.defaults.baseURL}/api/file_system/file/${rep.pdf_file_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary-background font-medium underline"
+                    >
+                      Öppna PDF
+                    </a>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </motion.div>
     </div>
   );

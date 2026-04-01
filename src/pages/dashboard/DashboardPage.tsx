@@ -33,6 +33,16 @@ const DashboardPage = () => {
   const [currentFileDate, setCurrentFileDate] = useState<string>("");
   const [currentFileId, setCurrentFileId] = useState<string>("");
   const [isPdf, setIsPdf] = useState<boolean>(false);
+  const [meetingsAiReports, setMeetingsAiReports] = useState<
+    {
+      _id: string;
+      room_name: string;
+      created_at?: string;
+      retention_until?: string;
+      pdf_file_id?: string;
+      visible_to_patient?: boolean;
+    }[]
+  >([]);
 
   const handleFileItemClick =
     (fileItem: IFileListItem | IFileTileItem) => async () => {
@@ -119,6 +129,15 @@ const DashboardPage = () => {
     })
   }, [])
 
+  useEffect(() => {
+    apiClient
+      .get("/api/meetings_ai/reports")
+      .then((rows: unknown) => {
+        setMeetingsAiReports(Array.isArray(rows) ? rows : []);
+      })
+      .catch(() => setMeetingsAiReports([]));
+  }, []);
+
   return (
     <>
       <motion.div
@@ -155,6 +174,49 @@ const DashboardPage = () => {
 
           {/* Calendar section */}
           <Calendar className="col-span-3 h-full" />
+        </div>
+
+        <div className="rounded-xl bg-white p-4 flex flex-col gap-2 border border-primary-border/10">
+          <div className="text-lg font-bold text-primary-text">
+            Kliniska sessionsrapporter (AI)
+          </div>
+          <p className="text-xs text-disabled-text">
+            Senaste rapporter från Phase 3 (Markdown + PDF i arkivet). Öppna PDF för att läsa.
+          </p>
+          {meetingsAiReports.length === 0 ? (
+            <p className="text-sm text-disabled-text py-2">Inga rapporter ännu — generera efter ett rumssamtal.</p>
+          ) : (
+            <ul className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+              {meetingsAiReports.map((r) => (
+                <li
+                  key={r._id}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary-border/15 px-3 py-2 text-sm"
+                >
+                  <div>
+                    <span className="font-semibold text-primary-text">{r.room_name}</span>
+                    {r.created_at ? (
+                      <span className="text-xs text-disabled-text ml-2">
+                        {new Date(r.created_at).toLocaleString("sv-SE")}
+                      </span>
+                    ) : null}
+                    {r.visible_to_patient ? (
+                      <span className="ml-2 text-xs text-focused-background">Synlig patient</span>
+                    ) : null}
+                  </div>
+                  {r.pdf_file_id ? (
+                    <a
+                      href={`${apiClient.defaults.baseURL}/api/file_system/file/${r.pdf_file_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-medium text-primary-background underline"
+                    >
+                      Öppna PDF
+                    </a>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-4 grow overflow-y-auto">
