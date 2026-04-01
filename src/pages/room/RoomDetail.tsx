@@ -141,8 +141,7 @@ const RoomPage: React.FC = () => {
     // Emit the message via Socket.IO
     if (socketInstance) {
       socketInstance.emit("room_message", {
-        room_id: roomName, // Assuming room_id is activeUser.sid; adjust as per backend
-        from: myname,
+        room_id: roomName,
         to: receiver,
         role: receiver_role,
         message: message.trim(),
@@ -290,7 +289,7 @@ const RoomPage: React.FC = () => {
       const handleNewMessage = (data: RoomMessage) => {
         const { from, message, to, timestamp } = data;
         const newMessage: Message = {
-          from: from === socketInstance.id ? "me" : from,
+          from: from === myname ? "me" : from,
           to: to,
           message,
           timestamp,

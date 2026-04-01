@@ -2,7 +2,7 @@ import SignOutButton from "../../components/layout/header/SignOutButton";
 import { twMerge } from "tailwind-merge";
 import TradeMark from "../../components/user/TradeMark";
 import { ChatApproved, ChatDenied, ChatStarted, InitResponse, Message, RoomMessage, User } from "../room/types";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import ChatItem from "../room/components/ChatItem";
 import Input from "../../components/common/Input";
 import { useSearchParams } from "react-router-dom";
@@ -31,6 +31,17 @@ interface Participant {
 
 const API_LOCATION = import.meta.env.VITE_BACKEND_URL;
 
+/** Stable display name per room session (avoids all patients showing as "patient"). */
+function stablePatientLabel(roomKey: string): string {
+  const key = `cc_patient_name_${roomKey}`;
+  let n = sessionStorage.getItem(key);
+  if (!n) {
+    n = `patient-${crypto.randomUUID().slice(0, 8)}`;
+    sessionStorage.setItem(key, n);
+  }
+  return n;
+}
+
 // Functional component for the Patient Dashboard
 function PatientDashboard() {
   const [messageList, setMessageList] = useState<Message[]>([]);
@@ -38,6 +49,11 @@ function PatientDashboard() {
 
   const [searchParams] = useSearchParams();
   const roomName = searchParams.get("roomname") as string;
+
+  const patientDisplayName = useMemo(
+    () => (roomName?.trim() ? stablePatientLabel(roomName.trim()) : "patient"),
+    [roomName]
+  );
 
   const [micShared, setMicShared] = useState(false);
   const [cameraShared, setCameraShared] = useState(false);
@@ -86,18 +102,18 @@ function PatientDashboard() {
     socket.on("connect", () => {
       socket.emit("join_waiting_room", {
         roomName: roomName,
-        username: "patient",
+        username: patientDisplayName,
         role: "patient",
       });
     });
 
     socket.on("admission_granted", async (data: { room_name?: string }) => {
       if (data?.room_name && data.room_name !== roomName) return;
-      const ok = await handleJoinMeeting(roomName, "patient");
+      const ok = await handleJoinMeeting(roomName, patientDisplayName);
       if (ok) {
         setAdmissionPhase("live");
         socket.emit("init", {
-          username: "patient",
+          username: patientDisplayName,
           role: "patient",
           roomName: roomName,
         });
@@ -177,20 +193,20 @@ function PatientDashboard() {
       socket.disconnect();
       setSocketInstance(null);
     };
-  }, [roomName])
+  }, [roomName, patientDisplayName])
   // Socket Initialization
   useEffect(() => {
     if (socketInstance) {
       const handleNewMessage = (data: RoomMessage) => {
         const { from, message, to, timestamp } = data;
         const newMessage: Message = {
-          from: from === socketInstance.id ? "me" : from,
+          from: from === patientDisplayName ? "me" : from,
           to,
           message,
           timestamp,
           role: "patient",
         };
-        if (to == "patient")
+        if (to == "patient" || to === patientDisplayName)
           setMessageList((prevList) => [...prevList, newMessage]);
       };
       socketInstance.on("room_message", handleNewMessage);
@@ -198,7 +214,7 @@ function PatientDashboard() {
         socketInstance.off("room_message", handleNewMessage);
       };
     }
-  }, [socketInstance, messageList]);
+  }, [socketInstance, messageList, patientDisplayName]);
 
   const sendMessage = () => {
     // Check if the message is not empty
@@ -209,7 +225,7 @@ function PatientDashboard() {
 
     // Create a new message object
     const newMessage: Message = {
-      from: "patient",
+      from: patientDisplayName,
       to: "creator",
       role: "patient",
       message: message.trim(),
@@ -222,8 +238,7 @@ function PatientDashboard() {
     // Emit the message via Socket.IO
     if (socketInstance) {
       socketInstance.emit("room_message", {
-        room_id: roomName, // Assuming room_id is activeUser.sid; adjust as per backend
-        from: "patient",
+        room_id: roomName,
         to: "creator",
         role: "patient",
         message: message.trim(),
@@ -278,7 +293,7 @@ function PatientDashboard() {
     await meteredMeeting.leaveMeeting();
 
     const response = await axios.get(
-      `${config.api.endpoint_uri}/api/room/leave?roomName=${roomName}&userName=${"patient"}&role=patient`
+      `${config.api.endpoint_uri}/api/room/leave?roomName=${roomName}&userName=${encodeURIComponent(patientDisplayName)}&role=patient`
     );
     if (response) {
     }
@@ -302,9 +317,8 @@ function PatientDashboard() {
         const METERED_DOMAIN = data.METERED_DOMAIN;
 
         const role = "patient";
-        // Calling the join() of Metered SDK
         const joinResponse = await meteredMeeting.join({
-          name: role,
+          name: username,
           roomURL: `${METERED_DOMAIN}/${roomName}`,
         });
 
@@ -450,7 +464,7 @@ function PatientDashboard() {
                   localVideoStream={localVideoStream}
                   onlineUsers={onlineUsers}
                   remoteTracks={remoteTracks}
-                  username={"patient"}
+                  username={patientDisplayName}
                   roomName={roomName}
                   meetingInfo={meetingInfo}
                   micShared={micShared}
@@ -477,8 +491,8 @@ function PatientDashboard() {
                 {messageList.map((msg, index) => (
                   <ChatItem
                     key={index}
-                    name={msg.from === "patient" ? "Me" : msg.from}
-                    role={msg.from === "patient" ? "me" : msg.role}
+                    name={msg.from === patientDisplayName || msg.from === "me" ? "Me" : msg.from}
+                    role={msg.from === patientDisplayName || msg.from === "me" ? "me" : msg.role}
                     content={msg.message}
                     // timestamp={msg.timestamp}
                   />

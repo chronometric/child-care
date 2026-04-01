@@ -97,11 +97,9 @@ function AnimatedRoutes() {
               <Route path="step2" element={<RoomCreateOnboarding2 />} />
               <Route path="step3" element={<RoomCreateOnboarding3 />} />
               <Route path="step4" element={<RoomCreateOnboarding4 />} />
-              <Route path="ai-structure" element={<MainLayout />}>
-            // Main layout for AI structure management
-                <Route index element={<AIStructureList />} /> // AI structure
-                list page
-              </Route>
+            </Route>
+            <Route path="ai-structure" element={<MainLayout />}>
+              <Route index element={<AIStructureList />} />
             </Route>
           </Route>
         </Route>

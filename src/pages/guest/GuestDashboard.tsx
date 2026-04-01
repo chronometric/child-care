@@ -36,10 +36,6 @@ import {
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
-const patientList = ["Sara"]; // List of patients
-
-const chatList = ["Lukas", "Anna", "Sara"]; // List of chat participants
-
 const API_LOCATION = import.meta.env.VITE_BACKEND_URL;
 
 interface TrackItem {
@@ -368,14 +364,15 @@ function GuestDashboard() {
     if (socketInstance) {
       const handleNewMessage = (data: RoomMessage) => {
         const { from, message, to, timestamp } = data;
+        const self = username || "guest";
         const newMessage: Message = {
-          from: from === socketInstance.id ? "me" : from,
+          from: from === self ? "me" : from,
           to: "me",
           message,
           timestamp,
           role: "guest",
         };
-        if (to == username)
+        if (to === self || to === "guest" || to === username)
           setMessageList((prevList) => [...prevList, newMessage]);
       };
       socketInstance.on("room_message", handleNewMessage);
@@ -408,8 +405,7 @@ function GuestDashboard() {
     // Emit the message via Socket.IO
     if (socketInstance) {
       socketInstance.emit("room_message", {
-        room_id: roomName, // Assuming room_id is activeUser.sid; adjust as per backend
-        from: username,
+        room_id: roomName,
         to: "creator",
         role: "guest",
         message: message.trim(),
@@ -464,16 +460,8 @@ function GuestDashboard() {
           <TradeMark className="font-extrabold text-[32px] leading-10 !text-primary-background" />
           {/* Notification and sign-out buttons */}
           <div className="flex items-center gap-2">
-            <div className="flex gap-x-2">
-              {patientList.map((userItem, index) => (
-                <ActionButton
-                  key={index}
-                  className="w-9 h-9 text-white bg-primary-text"
-                >
-                  {userItem.charAt(0).toUpperCase()}{" "}
-                  {/* Display first letter of patient name */}
-                </ActionButton>
-              ))}
+            <div className="flex gap-x-2 text-xs text-disabled-text items-center px-2">
+              Session participants appear after you join.
             </div>
             <div className="p-0.5">
               <SignOutButton redirectUri="/auth/guest-signin" />{" "}
@@ -538,16 +526,8 @@ function GuestDashboard() {
                           <li>Förmåga att skriva AI-prompt</li>
                         </ul>
                       </div>
-                      <div className="px-2 flex justify-end gap-x-1">
-                        {chatList.map((chatItem, index) => (
-                          <ActionButton
-                            key={index}
-                            className="w-9 h-9 bg-primary-text text-light-background"
-                          >
-                            {chatItem.charAt(0).toUpperCase()}{" "}
-                            {/* Display first letter of chat participant */}
-                          </ActionButton>
-                        ))}
+                      <div className="px-2 flex justify-end text-xs text-disabled-text">
+                        Chat targets load from the live session.
                       </div>
                     </>
                   )}
@@ -580,16 +560,8 @@ function GuestDashboard() {
                           </li>
                         </ul>
                       </div>
-                      <div className="px-2 flex justify-end">
-                        {patientList.map((patient, index) => (
-                          <ActionButton
-                            key={index}
-                            className="w-9 h-9 bg-primary-text text-light-background"
-                          >
-                            {patient.charAt(0).toUpperCase()}{" "}
-                            {/* Display first letter of patient */}
-                          </ActionButton>
-                        ))}
+                      <div className="px-2 flex justify-end text-xs text-disabled-text">
+                        Patient list is driven by the host session.
                       </div>
                     </>
                   )}

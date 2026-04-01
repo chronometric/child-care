@@ -22,7 +22,7 @@ A React single-page application for child-care telehealth: doctors manage sessio
 
 ## Environment variables
 
-Create a `.env` file in this directory (or set variables in your hosting provider):
+Copy **`.env.example`** to `.env` and set values (or configure the same keys in your host):
 
 | Variable | Required | Description |
 |----------|----------|---------------|
