@@ -37,6 +37,8 @@ import {
 } from "./types"; // Adjust the path as necessary
 // import { RiPlayReverseLine } from "react-icons/ri";
 import axios from "axios";
+import apiClient from "../../libs/api";
+import toast from "react-hot-toast";
 
 interface ITabItem {
   title: string; // Title of the tab
@@ -84,6 +86,11 @@ const RoomPage: React.FC = () => {
 
   const [chatRequests, setChatRequests] = useState<ChatRequest[]>([]); // For Room Creator
   const [roomInfo, setRoomInfo] = useState<any>({});
+  const [waitingQueue, setWaitingQueue] = useState<
+    { sid: string; username: string; role: string }[]
+  >([]);
+  const [sessionTranscript, setSessionTranscript] = useState("");
+  const [aiBusy, setAiBusy] = useState(false);
 
   if (roomInfo && chatRequests && loading) {
   }
@@ -239,6 +246,15 @@ const RoomPage: React.FC = () => {
       // Optionally, notify the user about the connection issue
     });
 
+    socket.on(
+      "waiting_room_update",
+      (data: { room_name?: string; queue?: { sid: string; username: string; role: string }[] }) => {
+        if (data.room_name === roomName) {
+          setWaitingQueue(data.queue || []);
+        }
+      }
+    );
+
     // Listen for 'chat_request' (Room Creator only)
     if (activeUser.role === "creator") {
       socket.on("chat_request", (data: ChatRequestData) => {
@@ -319,14 +335,14 @@ const RoomPage: React.FC = () => {
             roomName,
           }
         );
-        setRoomInfo(response);
+        setRoomInfo(response.data?.data ?? response.data);
       } catch (err: any) {
         console.log("Error in fetching room data", err);
       }
     };
 
     fetchRoomData();
-  }, []);
+  }, [roomName]);
 
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") sendMessage();
@@ -364,10 +380,91 @@ const RoomPage: React.FC = () => {
             {/* Room title and date */}
             <div className="flex flex-col items-end gap-y-1">
               <p className="font-bold text-xl leading-5 text-primary-background">
-                Elsas rum
+                {roomInfo?.patient_name || roomName || "Room"}
               </p>
               <p className="text-sm leading-4">2 Mars, 2024</p>
             </div>
+          </div>
+
+          {roomName && waitingQueue.length > 0 && socketInstance && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex flex-col gap-2">
+              <p className="text-sm font-semibold text-amber-900">Waiting room</p>
+              <ul className="flex flex-col gap-2">
+                {waitingQueue.map((w) => (
+                  <li
+                    key={w.sid}
+                    className="flex items-center justify-between gap-2 text-sm"
+                  >
+                    <span>
+                      {w.username} ({w.role})
+                    </span>
+                    <span className="flex gap-1">
+                      <button
+                        type="button"
+                        className="px-2 py-1 rounded bg-primary-background text-white text-xs"
+                        onClick={() =>
+                          socketInstance.emit("admit_waiting", {
+                            roomName: roomName as string,
+                            targetSid: w.sid,
+                          })
+                        }
+                      >
+                        Admit
+                      </button>
+                      <button
+                        type="button"
+                        className="px-2 py-1 rounded bg-light-background text-xs"
+                        onClick={() =>
+                          socketInstance.emit("reject_waiting", {
+                            roomName: roomName as string,
+                            targetSid: w.sid,
+                          })
+                        }
+                      >
+                        Reject
+                      </button>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="bg-white rounded-lg p-4 flex flex-col gap-2 border border-primary-border/15">
+            <p className="text-sm font-bold text-primary-background">Post-meeting AI report</p>
+            <p className="text-xs text-disabled-text">
+              Paste a session transcript (or notes). Generates a structured summary stored on the patient
+              timeline when linked.
+            </p>
+            <textarea
+              className="w-full min-h-[100px] rounded-lg border border-primary-border/25 p-2 text-sm"
+              value={sessionTranscript}
+              onChange={(e) => setSessionTranscript(e.target.value)}
+              placeholder="Transcript or session notes…"
+            />
+            <button
+              type="button"
+              disabled={aiBusy || !sessionTranscript.trim()}
+              className="self-end px-4 py-2 rounded-lg bg-primary-background text-white text-sm disabled:opacity-40"
+              onClick={async () => {
+                setAiBusy(true);
+                try {
+                  const pid = roomInfo?.patient_personal_id || "";
+                  await apiClient.post("/api/meeting_ai/analyze", {
+                    room_name: roomName,
+                    transcript: sessionTranscript,
+                    patient_personal_id: pid || undefined,
+                  });
+                  toast.success("Report generated — check notifications & patient record");
+                } catch {
+                  toast.error("Could not generate report");
+                } finally {
+                  setAiBusy(false);
+                }
+              }}
+            >
+              {aiBusy ? "Working…" : "Generate AI report"}
+            </button>
           </div>
 
           {/* Video call component with share functionality */}

@@ -14,6 +14,7 @@ import Avatar from "../common/Avatar";
 import ActionButton from "../common/ActionButton";
 import SignOutButton from "../layout/header/SignOutButton";
 import SearchInput from "../layout/header/SearchInput";
+import NotificationBell from "../layout/NotificationBell";
 
 import DashboardSVG from "../../assets/navbar/Dashboard.svg?react";
 import RoomSVG from "../../assets/navbar/Room.svg?react";
@@ -48,6 +49,11 @@ const sidebarItems = [
     title: "Files",
     icon: <FolderSVG />,
     path: "/files",
+  },
+  {
+    title: "Patients",
+    icon: <RoomSVG />,
+    path: "/patients",
   },
   {
     title: "Setting",
@@ -173,12 +179,7 @@ const MainLayout = () => {
           ) : (
             <>
               <SearchInput /> {/* Search input component */}
-              <div className="p-4 flex items-center justify-center">
-                {/* Zoom button */}
-                <button>
-                  <img src="/Notification.svg" />
-                </button>
-              </div>
+              <NotificationBell />
             </>
           )}
           <div className="p-0.5">

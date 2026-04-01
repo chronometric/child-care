@@ -34,6 +34,7 @@ import {
   // ChatHistory,
 } from "../room/types";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 
 const patientList = ["Sara"]; // List of patients
 
@@ -172,12 +173,8 @@ function GuestDashboard() {
       console.error("Error joining meeting:", error);
       alert("An error occurred while joining the meeting. Please try again.");
     }
+    return false;
   }
-
-  useEffect(() => {
-    handleJoinMeeting(roomName, username);
-    setMeetingJoined(true);
-  }, []);
 
   useEffect(() => {
     const handleRemoteTrackStarted = (trackItem: TrackItem) => {
@@ -244,17 +241,22 @@ function GuestDashboard() {
       meteredMeeting.removeListener("meetingLeft");
       meteredMeeting.removeListener("stateChanged");
     };
-  });
+  }, []);
 
   const [socketInstance, setSocketInstance] = useState<Socket | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [messageList, setMessageList] = useState<Message[]>([]);
+  const [admissionPhase, setAdmissionPhase] = useState<"waiting" | "live" | "denied">("waiting");
 
   if (allUsers) {
   }
 
   // Socket initialization
   useEffect(() => {
+    if (!roomName?.trim()) {
+      return;
+    }
+
     const socket: Socket = io(API_LOCATION, {
       path: "/socket.io/",
       transports: ["websocket"],
@@ -264,16 +266,32 @@ function GuestDashboard() {
     // Set the socket instance
     setSocketInstance(socket);
 
-    // Emit 'init' event upon connection
     socket.on("connect", () => {
-      // setLoading(false);
-      // setActiveUser((prevUser) => ({ ...prevUser, sid: socket.id? socket.id : "" }));
-      // Emit init with username and role
-      socket.emit("init", {
-        username: username,
-        role: "guest",
+      socket.emit("join_waiting_room", {
         roomName: roomName,
+        username: username || "guest",
+        role: "guest",
       });
+    });
+
+    socket.on("admission_granted", async (data: { room_name?: string }) => {
+      if (data?.room_name && data.room_name !== roomName) return;
+      const ok = await handleJoinMeeting(roomName, username || "guest");
+      if (ok) {
+        setAdmissionPhase("live");
+        socket.emit("init", {
+          username: username || "guest",
+          role: "guest",
+          roomName: roomName,
+        });
+      } else {
+        toast.error("Could not join the video session. You can stay in the waiting room or refresh.");
+      }
+    });
+
+    socket.on("admission_denied", (data: { reason?: string }) => {
+      setAdmissionPhase("denied");
+      toast.error(data?.reason || "Host declined entry");
     });
 
     // Listen for 'init_response'
@@ -342,7 +360,7 @@ function GuestDashboard() {
       socket.disconnect();
       setSocketInstance(null);
     };
-  }, []);
+  }, [roomName, username]);
 
   // Display received message
 
@@ -405,6 +423,39 @@ function GuestDashboard() {
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") sendMessage();
   };
+
+  if (!roomName?.trim()) {
+    return (
+      <div className="p-4 w-full h-full flex flex-col items-center justify-center bg-light-background gap-4">
+        <p className="text-primary-text">Missing room in the link. Use the invitation URL from the host.</p>
+        <SignOutButton redirectUri="/auth/guest-signin" />
+      </div>
+    );
+  }
+
+  if (admissionPhase === "waiting") {
+    return (
+      <div className="p-4 w-full h-full flex flex-col items-center justify-center bg-light-background gap-4">
+        <TradeMark className="font-extrabold text-[32px] leading-10 !text-primary-background" />
+        <div className="bg-white rounded-2xl p-8 max-w-md text-center shadow-basic">
+          <p className="font-semibold text-lg text-primary-background">Waiting room</p>
+          <p className="text-sm text-disabled-text mt-2">
+            The host will admit you to the video session shortly.
+          </p>
+        </div>
+        <SignOutButton redirectUri="/auth/guest-signin" />
+      </div>
+    );
+  }
+
+  if (admissionPhase === "denied") {
+    return (
+      <div className="p-4 w-full h-full flex flex-col items-center justify-center bg-light-background gap-4">
+        <p className="text-primary-text">You were not admitted to this session.</p>
+        <SignOutButton redirectUri="/auth/guest-signin" />
+      </div>
+    );
+  }
 
   return (
     <>

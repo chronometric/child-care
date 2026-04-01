@@ -15,6 +15,7 @@ import config from "../../config";
 import MeetingRoom from "../../components/room/MeetingRoom";
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
+import toast from "react-hot-toast";
 
 interface TrackItem {
   streamId: string;
@@ -50,6 +51,8 @@ function PatientDashboard() {
   const [meetingInfo, setMeetingInfo] = useState<any>({});
   const [meetingjoined, setMeetingJoined] = useState<boolean>(false);
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  /** Waiting room: host must admit before Metered join */
+  const [admissionPhase, setAdmissionPhase] = useState<"waiting" | "live" | "denied">("waiting");
 
   const navigate = useNavigate();
   if (allUsers) {}
@@ -67,6 +70,10 @@ function PatientDashboard() {
   const [socketInstance, setSocketInstance] = useState<Socket | null>(null);
 
   useEffect(() => {
+    if (!roomName?.trim()) {
+      return;
+    }
+
     const socket: Socket = io(API_LOCATION, {
       path: "/socket.io/",
       transports: ["websocket"],
@@ -76,16 +83,32 @@ function PatientDashboard() {
     // Set the socket instance
     setSocketInstance(socket);
 
-    // Emit 'init' event upon connection
     socket.on("connect", () => {
-      // setLoading(false);
-      // setActiveUser((prevUser) => ({ ...prevUser, sid: socket.id? socket.id : "" }));
-      // Emit init with username and role
-      socket.emit("init", {
+      socket.emit("join_waiting_room", {
+        roomName: roomName,
         username: "patient",
         role: "patient",
-        roomName: roomName,
       });
+    });
+
+    socket.on("admission_granted", async (data: { room_name?: string }) => {
+      if (data?.room_name && data.room_name !== roomName) return;
+      const ok = await handleJoinMeeting(roomName, "patient");
+      if (ok) {
+        setAdmissionPhase("live");
+        socket.emit("init", {
+          username: "patient",
+          role: "patient",
+          roomName: roomName,
+        });
+      } else {
+        toast.error("Could not join the video session. You can stay in the waiting room or refresh.");
+      }
+    });
+
+    socket.on("admission_denied", (data: { reason?: string }) => {
+      setAdmissionPhase("denied");
+      toast.error(data?.reason || "Host declined entry");
     });
 
     // Listen for 'init_response'
@@ -154,24 +177,8 @@ function PatientDashboard() {
       socket.disconnect();
       setSocketInstance(null);
     };
-  }, [])
+  }, [roomName])
   // Socket Initialization
-  useEffect(() => {
-    if (socketInstance) {
-      socketInstance.on("connect", () => {
-        socketInstance.emit("init", {
-          username: "patient",
-          role: "patient",
-          roomName: roomName,
-        });
-      });
-
-      socketInstance.on("init_response", (data: InitResponse) => {
-        data;
-      });
-    }
-  }, [socketInstance]);
-
   useEffect(() => {
     if (socketInstance) {
       const handleNewMessage = (data: RoomMessage) => {
@@ -322,12 +329,8 @@ function PatientDashboard() {
       console.error("Error joining meeting:", error);
       alert("An error occurred while joining the meeting. Please try again.");
     }
+    return false;
   }
-
-  useEffect(() => {
-    handleJoinMeeting(roomName, "patient");
-    setMeetingJoined(true);
-  }, []);
 
   useEffect(() => {
     const handleRemoteTrackStarted = (trackItem: TrackItem) => {
@@ -381,6 +384,39 @@ function PatientDashboard() {
       meteredMeeting.removeListener("localTrackUpdated");
     };
   });
+
+  if (!roomName?.trim()) {
+    return (
+      <div className="p-4 w-full h-full flex flex-col items-center justify-center bg-light-background gap-4">
+        <p className="text-primary-text">Missing room link. Open the session URL from your invitation.</p>
+        <SignOutButton redirectUri="/auth/patient-signin" />
+      </div>
+    );
+  }
+
+  if (admissionPhase === "waiting") {
+    return (
+      <div className="p-4 w-full h-full flex flex-col items-center justify-center bg-light-background gap-4">
+        <TradeMark className="font-extrabold text-[32px] leading-10 !text-primary-background" />
+        <div className="bg-white rounded-2xl p-8 max-w-md text-center shadow-basic">
+          <p className="font-semibold text-lg text-primary-background">Waiting room</p>
+          <p className="text-sm text-disabled-text mt-2">
+            You are in the queue. The host will admit you to the video session shortly.
+          </p>
+        </div>
+        <SignOutButton redirectUri="/auth/patient-signin" />
+      </div>
+    );
+  }
+
+  if (admissionPhase === "denied") {
+    return (
+      <div className="p-4 w-full h-full flex flex-col items-center justify-center bg-light-background gap-4">
+        <p className="text-primary-text">You were not admitted to this session.</p>
+        <SignOutButton redirectUri="/auth/patient-signin" />
+      </div>
+    );
+  }
 
   return (
     <>

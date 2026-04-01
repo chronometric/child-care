@@ -26,6 +26,7 @@ import AdminLogin from "../../pages/admin/Login";
 import AdminDashboard from "../../pages/admin/Dashboard";
 import PatientDashboard from "../../pages/patient/PatientDashboard";
 import GuestDashboard from "../../pages/guest/GuestDashboard";
+import PatientsPage from "../../pages/patients/PatientsPage";
 import RoomCreateOnboarding1 from "../../pages/room_create/Onboarding/RoomCreateOnboarding1";
 import RoomCreateOnboarding2 from "../../pages/room_create/Onboarding/RoomCreateOnboarding2";
 import RoomCreateOnboarding3 from "../../pages/room_create/Onboarding/RoomCreateOnboarding3";
@@ -78,6 +79,7 @@ function AnimatedRoutes() {
           <Route path="rooms" element={<RoomListPage />} /> // Rooms list page
           <Route path="calendar" element={<CalendarPage />} /> // Calendar page
           <Route path="files" element={<FilesPage />} /> // Files page
+          <Route path="patients" element={<PatientsPage />} /> // Patient records
           <Route path="settings" element={<SettingsPage />} /> // Settings page
           <Route path="room/:id" element={<RoomPage />} /> // Room details page,
           with dynamic ID

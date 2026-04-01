@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { MdOutlineMail } from "react-icons/md"; // Importing mail icon for use in email column
+import { twMerge } from "tailwind-merge";
 
 import Button from "../../components/common/Button"; // Common button component
 import Table, { type IColumn, type IRow } from "../../components/common/Table"; // Common table component with column and row types
 import CompanyCreateDialog from "./CompanyCreateDialog"; // Dialog component for creating a new company
+import AdminUsersTab from "./AdminUsersTab";
+import AdminSystemTab from "./AdminSystemTab";
+import AdminAIConfigTab from "./AdminAIConfigTab";
 import apiClient from "../../libs/api";
 import { useAppSelector } from "../../store";
 import toast from "react-hot-toast"; // For user feedback when sending emails
+
+type AdminTab = "overview" | "users" | "system" | "ai";
 
 // Interface defining the shape of company data
 interface ICompany {
@@ -106,11 +112,19 @@ const handleSendCompanyCode = (userEmail: string) => {
 // Main dashboard component for managing and displaying company information
 function Dashboard() {
   const adminEmail = useAppSelector(state => state.admin.email);
+  const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [companyData, setCompanyData] = useState<ICompany[]>([]); // State to manage the list of companies
   const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false); // State to manage the visibility of the create dialog
   const [totalCompanies, setTotalCompanies] = useState<number>(0); // State for total companies
   const [totalUsers, setTotalUsers] = useState<number>(0); // State for total users
   const [totalRooms, setTotalRooms] = useState<number>(0); // State for total rooms
+
+  const tabs: { id: AdminTab; label: string }[] = [
+    { id: "overview", label: "Companies" },
+    { id: "users", label: "Users" },
+    { id: "system", label: "System" },
+    { id: "ai", label: "AI config" },
+  ];
 
 
   // Handler to add a new company to the state
@@ -166,6 +180,30 @@ function Dashboard() {
 
   return (
     <>
+      <div className="flex flex-wrap gap-2 mb-2">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setActiveTab(t.id)}
+            className={twMerge(
+              "px-4 py-2 rounded-lg text-sm font-medium",
+              activeTab === t.id
+                ? "bg-primary-background text-white"
+                : "bg-white text-primary-text border border-primary-border/20"
+            )}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === "users" && <AdminUsersTab />}
+      {activeTab === "system" && <AdminSystemTab />}
+      {activeTab === "ai" && <AdminAIConfigTab />}
+
+      {activeTab === "overview" && (
+      <>
       {/* Main content area, using flex and grid layouts */}
       <div className="grow flex flex-col gap-y-4 overflow-y-auto">
         {/* Section for creating a new company */}
@@ -214,6 +252,9 @@ function Dashboard() {
           <Table rows={companyData} columns={companyColumns} /> {/* Table of company data */}
         </div>
       </div>
+      </>
+      )}
+
       {/* Dialog component for creating a new company */}
       <CompanyCreateDialog
         open={isCreateOpen}
