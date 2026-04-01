@@ -80,7 +80,7 @@ const MainLayout = () => {
   // const redirect = params.get("redirect") as string;
   const { pathname } = useLocation(); // React Router hook for current pathname
   const searchParams = useSearchParams(); // Hook to access URL search parameters
-  const isAIPage = pathname === "/room/create/ai-structure"; // Check if the current page is the AI creation page
+  const isAIPage = pathname === "/ai-structure";
   const isRoomPage = pathname.startsWith("/room/"); // Check if the current page is a room page
   const accountMe = useAppSelector(state => state.auth.createUser);
   const isAuth = useAppSelector((state) => state.auth.isAuth);
@@ -129,16 +129,23 @@ const MainLayout = () => {
 
   useEffect(() => {
 
+    const staffToken = localStorage.getItem("token") || "";
     const socket: Socket = io(API_LOCATION, {
       path: "/socket.io/",
-      transports: ['websocket'],
+      transports: ["websocket"],
+      auth: { token: staffToken },
     });
 
     socket.on("connect", () => {
       const roomName = localStorage.getItem("roomName");
       const username = localStorage.getItem("username");
-      socket.emit("init", { username: username, role: "creator", roomName: roomName });
-    })
+      socket.emit("init", {
+        username,
+        role: "creator",
+        roomName,
+        token: staffToken || undefined,
+      });
+    });
 
     socket.on("init_response", (data: InitResponse) => {
       const patients = data.users.filter(user => user.role === "patient").map(user => ({ ...user, user_id: user.sid }));

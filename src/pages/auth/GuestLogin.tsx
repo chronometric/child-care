@@ -12,6 +12,7 @@ import Button from "../../components/common/Button";
 import TradeMark from "../../components/user/TradeMark";
 import { MeetingContext } from "../../MeetingContext";
 import apiClient from "../../libs/api";
+import { setRoomToken } from "../../lib/roomToken";
 import toast from "react-hot-toast";
 
 interface TrackItem {
@@ -53,7 +54,8 @@ const GuestLogin = () => {
       })
       .then((response: any) => {
         if (response.message == "ok") {
-          navigate(`/guest?${new URLSearchParams({ roomname: response.roomName })}&username=${username}`); // Navigate to the patient page when clicked
+          if (response.room_token) setRoomToken(response.room_token);
+          navigate(`/guest?${new URLSearchParams({ roomname: response.roomName })}&username=${username}`);
         } else {
           toast.error("Please enter correct password");
         }

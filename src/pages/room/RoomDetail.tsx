@@ -81,19 +81,16 @@ const RoomPage: React.FC = () => {
 
   // Socket.IO states
   const [socketInstance, setSocketInstance] = useState<Socket | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [, setLoading] = useState<boolean>(true);
   // const [buttonStatus, setButtonStatus] = useState<boolean>(false);
 
-  const [chatRequests, setChatRequests] = useState<ChatRequest[]>([]); // For Room Creator
+  const [, setChatRequests] = useState<ChatRequest[]>([]);
   const [roomInfo, setRoomInfo] = useState<any>({});
   const [waitingQueue, setWaitingQueue] = useState<
     { sid: string; username: string; role: string }[]
   >([]);
   const [sessionTranscript, setSessionTranscript] = useState("");
   const [aiBusy, setAiBusy] = useState(false);
-
-  if (roomInfo && chatRequests && loading) {
-  }
 
   // Function to handle tab click
   const handleTabItemClick =
@@ -154,10 +151,11 @@ const RoomPage: React.FC = () => {
 
   // Socket initialization
   useEffect(() => {
+    const staffToken = localStorage.getItem("token") || "";
     const socket: Socket = io(API_LOCATION, {
       path: "/socket.io/",
       transports: ["websocket"],
-      // Removed 'cors' as it's handled server-side
+      auth: staffToken ? { token: staffToken } : {},
     });
 
     // Set the socket instance
@@ -170,11 +168,11 @@ const RoomPage: React.FC = () => {
         ...prevUser,
         sid: socket.id ? socket.id : "",
       }));
-      // Emit init with username and role
       socket.emit("init", {
         username: myname,
         role: "creator",
         roomName: roomName,
+        token: staffToken || undefined,
       });
     });
 
@@ -449,12 +447,12 @@ const RoomPage: React.FC = () => {
                 setAiBusy(true);
                 try {
                   const pid = roomInfo?.patient_personal_id || "";
-                  await apiClient.post("/api/meeting_ai/analyze", {
+                  await apiClient.post("/api/meeting_ai/transcript", {
                     room_name: roomName,
                     transcript: sessionTranscript,
                     patient_personal_id: pid || undefined,
                   });
-                  toast.success("Report generated — check notifications & patient record");
+                  toast.success("AI pipeline queued — check notifications when ready");
                 } catch {
                   toast.error("Could not generate report");
                 } finally {

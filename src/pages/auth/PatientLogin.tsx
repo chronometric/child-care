@@ -8,6 +8,7 @@ import { useContext, useState } from "react";
 import { MeetingContext } from "../../MeetingContext";
 import { useEffect } from "react";
 import apiClient from "../../libs/api";
+import { setRoomToken } from "../../lib/roomToken";
 import toast from "react-hot-toast";
 
 interface TrackItem {
@@ -91,7 +92,8 @@ const PatientLogin = () => {
       })
       .then((response: any) => {
         if (response.message == "ok") {
-          navigate(`/patient?${new URLSearchParams({ roomname: response.roomName })}`); // Navigate to the patient page when clicked
+          if (response.room_token) setRoomToken(response.room_token);
+          navigate(`/patient?${new URLSearchParams({ roomname: response.roomName })}`);
         } else {
           toast.error("Only one patient can join");
         }

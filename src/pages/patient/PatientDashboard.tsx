@@ -16,6 +16,7 @@ import MeetingRoom from "../../components/room/MeetingRoom";
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import toast from "react-hot-toast";
+import { getRoomToken } from "../../lib/roomToken";
 
 interface TrackItem {
   streamId: string;
@@ -80,10 +81,11 @@ function PatientDashboard() {
       return;
     }
 
+    const rt = getRoomToken();
     const socket: Socket = io(API_LOCATION, {
       path: "/socket.io/",
       transports: ["websocket"],
-      // Removed 'cors' as it's handled server-side
+      auth: rt ? { token: rt } : {},
     });
 
     // Set the socket instance
@@ -94,6 +96,7 @@ function PatientDashboard() {
         roomName: roomName,
         username: patientDisplayName,
         role: "patient",
+        token: rt || undefined,
       });
     });
 
@@ -106,6 +109,7 @@ function PatientDashboard() {
           username: patientDisplayName,
           role: "patient",
           roomName: roomName,
+          token: getRoomToken() || undefined,
         });
       } else {
         toast.error("Kunde inte ansluta till videosamtalet. Du kan stanna i väntrummet eller ladda om sidan.");

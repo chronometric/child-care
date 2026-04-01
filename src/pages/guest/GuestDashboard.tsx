@@ -35,6 +35,7 @@ import {
 } from "../room/types";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { getRoomToken } from "../../lib/roomToken";
 
 const API_LOCATION = import.meta.env.VITE_BACKEND_URL;
 
@@ -60,15 +61,12 @@ function GuestDashboard() {
   const [localVideoStream, setLocalVideoStream] = useState<MediaStream | null>(
     null
   );
-  const [meetingEnded, setMeetingEnded] = useState(false);
+  const [, setMeetingEnded] = useState(false);
   const [remoteTracks, setRemoteTracks] = useState<TrackItem[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<Participant[]>([]);
   const [meetingInfo, setMeetingInfo] = useState<any>({});
-  const [meetingjoined, setMeetingJoined] = useState<boolean>(false);
+  const [, setMeetingJoined] = useState<boolean>(false);
   const [message, setMessage] = useState<string>("");
-
-  if (meetingEnded || meetingjoined) {
-  }
 
   const [searchParams] = useSearchParams();
   const roomName = searchParams.get("roomname") as string;
@@ -253,10 +251,11 @@ function GuestDashboard() {
       return;
     }
 
+    const rt = getRoomToken();
     const socket: Socket = io(API_LOCATION, {
       path: "/socket.io/",
       transports: ["websocket"],
-      // Removed 'cors' as it's handled server-side
+      auth: rt ? { token: rt } : {},
     });
 
     // Set the socket instance
@@ -267,6 +266,7 @@ function GuestDashboard() {
         roomName: roomName,
         username: username || "guest",
         role: "guest",
+        token: rt || undefined,
       });
     });
 
@@ -279,6 +279,7 @@ function GuestDashboard() {
           username: username || "guest",
           role: "guest",
           roomName: roomName,
+          token: getRoomToken() || undefined,
         });
       } else {
         toast.error("Could not join the video session. You can stay in the waiting room or refresh.");

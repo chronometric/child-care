@@ -145,7 +145,7 @@ const RoomCreateOnboarding3 = () => {
                 <span
                   className="text-primary-background underline text-sm leading-5 cursor-pointer"
                   onClick={() => {
-                    navigate("/room/create/ai-structure");
+                    navigate("/ai-structure");
                   }}
                 >
                   Se allt
