@@ -55,7 +55,7 @@ The dev server listens on all interfaces (`0.0.0.0`) by default—adjust in `vit
 - **Guest** — Similar flow with guest credentials / link; limited scope.
 - **Admin** — Separate sign-in; company overview, user directory, system metrics, AI-related settings (backed by admin APIs).
 
-Routes are defined in `src/components/layout/AnimatedRoutes.tsx` (and mirrored in `src/routes/index.tsx` where applicable).
+Routes are defined in `src/routes/AppRoutes.tsx` and re-exported by `src/routes/index.ts` and `src/components/layout/AnimatedRoutes.tsx`.
 
 ## Project layout (high level)
 

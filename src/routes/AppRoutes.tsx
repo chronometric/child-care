@@ -72,6 +72,11 @@ function AppRoutes() {
         </Route>
         <Route path="room" element={<Outlet />}>
           <Route path="create" element={<Outlet />}>
+            {/* Legacy URL from older builds; canonical path is /ai-structure */}
+            <Route
+              path="ai-structure"
+              element={<Navigate to="/ai-structure" replace />}
+            />
             <Route index element={<CreateRoomMain />} />
             <Route path="onboarding" element={<RoomCreateOnboardingMain />}>
               <Route index element={<Navigate to="step1" replace />} />
@@ -82,7 +87,8 @@ function AppRoutes() {
             </Route>
           </Route>
         </Route>
-        <Route path="*" element={<Navigate to="/auth" replace />} />
+        {/* Unknown paths → home; MainLayout sends unauthenticated users to /auth */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AnimatePresence>
   );
