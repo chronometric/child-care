@@ -236,8 +236,8 @@ function Dashboard() {
                 <p className="font-bold text-3xl leading-9">{totalUsers}</p> {/* Dynamic total users */}
               </div>
               <div className="pt-4 pb-[18px] flex flex-col items-center gap-y-2.5 text-white bg-focused-background rounded-lg">
-                <p className="text-base leading-5">Patient</p>
-                <p className="font-bold text-3xl leading-9">{totalRooms}</p> {/* Dynamic total rooms */}
+                <p className="text-base leading-5">Rum (totalt)</p>
+                <p className="font-bold text-3xl leading-9">{totalRooms}</p>
               </div>
               <div className="pt-4 pb-[18px] flex flex-col items-center gap-y-2.5 text-white bg-primary-text rounded-lg">
                 <p className="text-base leading-5">Utrymme</p>

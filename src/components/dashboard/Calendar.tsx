@@ -216,6 +216,7 @@ function Calendar({ className = "" }: CalendarProps) {
         .put(`/api/events/${event.id}`, {
           event_name: event.eventName,
           patient_name: event.patientName,
+          patient_personal_id: event.patientPersonalId?.trim() || undefined,
           start_time: new Date(event.startTime).toISOString(),
           end_time: new Date(event.endTime).toISOString(),
           description: event.description,
@@ -226,13 +227,17 @@ function Calendar({ className = "" }: CalendarProps) {
             weekEvents.map((item) => (item.id === event.id ? event : item))
           );
           toast.success(message);
-        });
+        })
+        .catch(() => toast.error("Kunde inte uppdatera händelse."));
     } else if (type === "delete") {
-      apiClient.delete(`/api/events/${event.id}`).then((response: any) => {
-        const { message } = response;
-        setWeekEvents(weekEvents.filter((item) => item.id !== event.id));
-        toast.success(message);
-      });
+      apiClient
+        .delete(`/api/events/${event.id}`)
+        .then((response: any) => {
+          const { message } = response;
+          setWeekEvents(weekEvents.filter((item) => item.id !== event.id));
+          toast.success(message);
+        })
+        .catch(() => toast.error("Kunde inte ta bort händelse."));
     }
     setActiveWeekday(-1);
   };
@@ -287,11 +292,13 @@ function Calendar({ className = "" }: CalendarProps) {
           endTime: getLocalDate(item.end_time),
           eventName: item.event_name,
           patientName: item.patient_name,
+          patientPersonalId: item.patient_personal_id || "",
           description: item.description,
           createdAt: item.created_at,
         }));
         setWeekEvents(weekEvents);
-      });
+      })
+      .catch(() => toast.error("Kunde inte ladda veckans händelser."));
   }, [weekStartDay]);
 
   useEffect(() => {

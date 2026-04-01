@@ -31,6 +31,7 @@ import RoomCreateOnboarding1 from "../pages/room_create/Onboarding/RoomCreateOnb
 import RoomCreateOnboarding2 from "../pages/room_create/Onboarding/RoomCreateOnboarding2";
 import RoomCreateOnboarding3 from "../pages/room_create/Onboarding/RoomCreateOnboarding3";
 import RoomCreateOnboarding4 from "../pages/room_create/Onboarding/RoomCreateOnboarding4";
+import StudentSessionsPage from "../pages/student/StudentSessionsPage";
 
 /**
  * Single route tree for the app. Import this from `AnimatedRoutes` only.
@@ -43,6 +44,7 @@ function AppRoutes() {
       <Routes location={location} key={location.pathname}>
         <Route path="patient" element={<PatientDashboard />} />
         <Route path="guest" element={<GuestDashboard />} />
+        <Route path="student" element={<StudentSessionsPage />} />
         <Route path="admin" element={<Outlet />}>
           <Route path="sign-in" element={<AdminLogin />} />
           <Route path="" element={<AdminLayout />}>

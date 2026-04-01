@@ -12,14 +12,20 @@ function AdminUsersTab() {
   const [rows, setRows] = useState<IRow[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState<number | null>(null);
 
   useEffect(() => {
     apiClient
       .get(`/api/admins/users?page=${page}&page_size=15`)
       .then((res: unknown) => {
-        const r = res as { users?: IRow[]; total_pages?: number };
+        const r = res as {
+          users?: IRow[];
+          total_pages?: number;
+          total_users?: number;
+        };
         setRows(r.users || []);
         setTotalPages(r.total_pages || 1);
+        if (typeof r.total_users === "number") setTotalUsers(r.total_users);
       })
       .catch(() => setRows([]));
   }, [page]);
@@ -28,7 +34,9 @@ function AdminUsersTab() {
     <div className="grow py-4 px-7 flex flex-col gap-y-3 bg-white rounded-lg overflow-y-auto">
       <p className="font-semibold text-xl leading-6">Users (doctors)</p>
       <p className="text-sm text-disabled-text">
-        Paginated list from the user directory. Company association is managed per registration.
+        From <code className="text-xs bg-light-background px-1 rounded">GET /api/admins/users</code>
+        {totalUsers != null ? ` — ${totalUsers} accounts total.` : " — paginated directory (admin JWT required)."}
+        Company association is managed per registration.
       </p>
       <Table rows={rows} columns={columns} />
       {totalPages > 1 && (

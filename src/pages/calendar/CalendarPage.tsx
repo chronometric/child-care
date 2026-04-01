@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { motion } from "framer-motion";
 
@@ -41,7 +41,7 @@ const CalendarPage = () => {
   const memoEvents = useMemo(() => {
     return events.map(event => {
       const date = new Date(event.startTime);
-      let targetDate = new Date(event.createdAt).toLocaleDateString('sv-SE', { day: '2-digit', month: 'short', year: 'numeric' });
+      let targetDate = new Date(event.createdAt || event.startTime).toLocaleDateString('sv-SE', { day: '2-digit', month: 'short', year: 'numeric' });
 
       targetDate = removePeriod(targetDate).replace(/(\d{2}) (\w{3}) (\d{4})/, (_match, day, month, year) => {
         return `${day} ${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`;
@@ -88,59 +88,83 @@ const CalendarPage = () => {
     setEventDialogOpen(true);
   }
 
-  const handleSubmit = (event: IEvent, type: 'create' | 'update' | 'delete') => {
-    if (type === 'create') {
-      apiClient.post('/api/events/', {
-        "event_name": event.eventName,
-        "patient_name": event.patientName,
-        "start_time": new Date(event.startTime).toISOString(),
-        "end_time": new Date(event.endTime).toISOString(),
-        "description": event.description
-      }).then((response: any) => {
-        const { event_id, message } = response;
-        setEvents([...events, { ...event, id: event_id }]);
-        toast.success(message);
+  const refreshEvents = useCallback(() => {
+    apiClient
+      .get("/api/events/")
+      .then((response: any) => {
+        setEvents(
+          response.map((eventItem: any) => {
+            const {
+              _id,
+              event_name,
+              patient_name,
+              patient_personal_id,
+              start_time,
+              end_time,
+              description,
+              created_at,
+            } = eventItem;
+            return {
+              id: _id,
+              eventName: event_name,
+              patientName: patient_name,
+              patientPersonalId: patient_personal_id || "",
+              startTime: getLocalDate(start_time),
+              endTime: getLocalDate(end_time),
+              description,
+              createdAt: created_at,
+            };
+          })
+        );
+        setTotalPage(Math.ceil(response.length / 6));
       })
-    } else if (type === 'update') {
-      apiClient.put(`/api/events/${event.id}`, {
-        "event_name": event.eventName,
-        "patient_name": event.patientName,
-        "start_time": new Date(event.startTime).toISOString(),
-        "end_time": new Date(event.endTime).toISOString(),
-        "description": event.description
-      }).then((response: any) => {
-        const { message } = response;
-        setEvents(events.map(item => item.id === event.id ? event : item))
-        toast.success(message);
-      })
+      .catch(() => toast.error("Kunde inte ladda kalenderhändelser."));
+  }, []);
+
+  const handleSubmit = (event: IEvent, type: "create" | "update" | "delete") => {
+    const payload = {
+      event_name: event.eventName,
+      patient_name: event.patientName,
+      patient_personal_id: event.patientPersonalId?.trim() || undefined,
+      start_time: new Date(event.startTime).toISOString(),
+      end_time: new Date(event.endTime).toISOString(),
+      description: event.description,
+    };
+    if (type === "create") {
+      apiClient
+        .post("/api/events/", payload)
+        .then((response: any) => {
+          const { message } = response;
+          toast.success(message);
+          refreshEvents();
+        })
+        .catch(() => toast.error("Kunde inte skapa händelse."));
+    } else if (type === "update") {
+      apiClient
+        .put(`/api/events/${event.id}`, payload)
+        .then((response: any) => {
+          const { message } = response;
+          toast.success(message);
+          refreshEvents();
+        })
+        .catch(() => toast.error("Kunde inte uppdatera händelse."));
     } else {
-      apiClient.delete(`/api/events/${event.id}`).then((response: any) => {
-        const { message } = response;
-        setEvents(events.filter(item => item.id !== event.id));
-        toast.success(message)
-      })
+      apiClient
+        .delete(`/api/events/${event.id}`)
+        .then((response: any) => {
+          const { message } = response;
+          toast.success(message);
+          refreshEvents();
+        })
+        .catch(() => toast.error("Kunde inte ta bort händelse."));
     }
-  }
+  };
 
 
 
   useEffect(() => {
-    apiClient.get('/api/events/').then((response: any) => {
-      setEvents(response.map((eventItem: any) => {
-        const { _id, event_name, patient_name, start_time, end_time, description, created_at } = eventItem;
-        return {
-          id: _id,
-          eventName: event_name,
-          patientName: patient_name,
-          startTime: getLocalDate(start_time),
-          endTime: getLocalDate(end_time),
-          description,
-          createdAt: created_at
-        }
-      }))
-      setTotalPage(Math.ceil(response.length / 6));
-    });
-  }, []);
+    refreshEvents();
+  }, [refreshEvents]);
 
   return (
     <>

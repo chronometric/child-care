@@ -142,6 +142,13 @@ const PatientLogin = () => {
               >
                 Delta
               </Button>
+              <button
+                type="button"
+                className="mt-3 text-sm text-primary-background underline text-left"
+                onClick={() => navigate("/student")}
+              >
+                Visa mina kommande sessioner (kalender)
+              </button>
             </div>
           </div>
         </div>

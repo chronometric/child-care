@@ -11,6 +11,7 @@ import { motion } from "framer-motion";
 import toast from "react-hot-toast";
 
 import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
 import {
   FileFormat,
   IFileListItem,
@@ -43,6 +44,10 @@ const FilesPage = () => {
   const [currentVideoLink, setCurrentVideoLink] = useState<string>("");
   const [currentFileId, setCurrentFileId] = useState<string>("");
   const [isPdf, setIsPdf] = useState<boolean>(false);
+  /** Optional metadata: shared materials for a patient / room */
+  const [uploadPatientId, setUploadPatientId] = useState("");
+  const [uploadRoomName, setUploadRoomName] = useState("");
+  const [uploadSharedWithPatient, setUploadSharedWithPatient] = useState(false);
 
   const handleFileItemClick =
     (fileItem: IFileListItem | IFileTileItem) => async () => {
@@ -116,21 +121,19 @@ const FilesPage = () => {
       const formData = new FormData();
       formData.append("folder_name", currentFolder);
       formData.append("file", files[0]);
-      console.log(files[0]);
+      if (uploadPatientId.trim())
+        formData.append("patient_personal_id", uploadPatientId.trim());
+      if (uploadRoomName.trim())
+        formData.append("room_name", uploadRoomName.trim());
+      formData.append(
+        "shared_with_patient",
+        uploadSharedWithPatient ? "true" : "false"
+      );
       apiClient.post("/api/file_system/upload", formData).then(() => {
-        toast.success("File uploaded.");
-        setFilesOfFolder([
-          ...filesOfFolder,
-          {
-            file_id: `${filesOfFolder.length + 1}`,
-            filename: files[0].name,
-            file_type: files[0].name
-              .split(".")
-              .slice()
-              .reverse()[0] as FileFormat,
-            upload_date: new Date(),
-          },
-        ]);
+        toast.success("Filen har laddats upp.");
+        apiClient
+          .get(`/api/file_system/list-files?folder_name=${currentFolder}`)
+          .then((response: any) => setFilesOfFolder(response));
       });
     }
   };
@@ -217,6 +220,35 @@ const FilesPage = () => {
             {/* Section for displaying all files */}
             <div className="grow flex flex-col gap-y-2.5 overflow-y-auto relative">
               <p className="text-xl font-semibold">Filer</p>
+              <div className="flex flex-col gap-2 pb-2 border-b border-light-background text-sm">
+                <p className="text-disabled-text text-xs">
+                  Valfritt vid uppladdning: koppla till patient / rum (delat material)
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <Input
+                    name="upload_patient_id"
+                    placeholder="Patient-ID (personnummer)"
+                    value={uploadPatientId}
+                    onChange={(e) => setUploadPatientId(e.target.value)}
+                    className="text-sm"
+                  />
+                  <Input
+                    name="upload_room_name"
+                    placeholder="Rum (metered room name)"
+                    value={uploadRoomName}
+                    onChange={(e) => setUploadRoomName(e.target.value)}
+                    className="text-sm"
+                  />
+                </div>
+                <label className="flex items-center gap-2 cursor-pointer text-xs">
+                  <input
+                    type="checkbox"
+                    checked={uploadSharedWithPatient}
+                    onChange={(e) => setUploadSharedWithPatient(e.target.checked)}
+                  />
+                  Markera som delat med elev/patient
+                </label>
+              </div>
               <div className="py-2 pr-2 flex flex-wrap gap-2.5 overflow-y-auto">
                 {/* Displaying FileTileItem components */}
                 {filesOfFolder.map((fileItem, index) => (

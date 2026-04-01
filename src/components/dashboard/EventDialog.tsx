@@ -27,6 +27,8 @@ export interface IEvent {
   endTime: string;
   eventName: string;
   patientName: string;
+  /** Stable id when provided — links calendar to patient records / student portal */
+  patientPersonalId?: string;
   description: string;
   createdAt: string;
 }
@@ -46,6 +48,7 @@ const initialEvent: IEvent = {
   endTime: '',
   eventName: '',
   patientName: '',
+  patientPersonalId: '',
   description: '',
   createdAt: ''
 }
@@ -174,6 +177,18 @@ function EventDialog({
                 className="w-full"
                 value={event.patientName}
                 onChange={(e) => setEvent({ ...event, patientName: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1 mb-4">
+              <p className="pl-2 text-xs">Patient-ID (valfritt, personnummer)</p>
+              <Input
+                name="patientPersonalId"
+                placeholder="YYYYMMDD-XXXX"
+                className="w-full"
+                value={event.patientPersonalId || ""}
+                onChange={(e) =>
+                  setEvent({ ...event, patientPersonalId: e.target.value })
+                }
               />
             </div>
             <div className="space-y-1 mb-4">
