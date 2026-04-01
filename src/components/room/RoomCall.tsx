@@ -131,10 +131,9 @@ function RoomCall({ className = "", onShare }: RoomCallProps) {
       console.log("meeting state changed", meetingState);
     };
 
-    const handleMeetingLeft = (meetingState: any) => {
-      if (meetingState) {}
-        endMeeting();
-        navigate('/');      
+    const handleMeetingLeft = (_meetingState: any) => {
+      endMeeting();
+      navigate('/');
     };
 
     meteredMeeting.on("participantLeft", handleParticipantLeft);

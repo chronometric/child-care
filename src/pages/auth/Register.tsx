@@ -1,11 +1,13 @@
 import { ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
 
 import Input from '../../components/common/Input';
 import Checkbox from '../../components/common/Checkbox';
 import Button from '../../components/common/Button';
 import TradeMark from '../../components/user/TradeMark';
+import { FEATURES } from '../../config/features';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { updateCreateUser } from '../../store/reducers/authReducer';
 
@@ -64,13 +66,18 @@ const Register = () => {
               <Button
                 className="mt-4"
                 onClick={() => {
-                  navigate('/auth/payment');
+                  if (FEATURES.commercialAuthFlows) {
+                    navigate('/auth/payment');
+                  } else {
+                    toast('Betalningssteg är avstängt i denna version. Logga in om du redan har ett konto.');
+                    navigate('/auth/sign-in');
+                  }
                 }}
               >
                 Skapa
               </Button>
               <span className="text-primary-text/50 text-xs text-center">
-                Or use Bank ID
+                Eller använd BankID
               </span>
               <Button
                 variant="outlined"

@@ -56,7 +56,7 @@ const sidebarItems = [
     path: "/patients",
   },
   {
-    title: "Setting",
+    title: "Inställningar",
     icon: <SettingsSVG />,
     path: "/settings",
   },

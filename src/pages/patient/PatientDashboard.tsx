@@ -61,26 +61,16 @@ function PatientDashboard() {
   const [localVideoStream, setLocalVideoStream] = useState<MediaStream | null>(
     null
   );
-  const [meetingEnded, setMeetingEnded] = useState(false);
+  const [, setMeetingEnded] = useState(false);
   const [remoteTracks, setRemoteTracks] = useState<TrackItem[]>([]);
   const [onlineUsers, setOnlineUsers] = useState<Participant[]>([]);
   const [meetingInfo, setMeetingInfo] = useState<any>({});
-  const [meetingjoined, setMeetingJoined] = useState<boolean>(false);
-  const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [, setMeetingJoined] = useState<boolean>(false);
+  const [, setAllUsers] = useState<User[]>([]);
   /** Waiting room: host must admit before Metered join */
   const [admissionPhase, setAdmissionPhase] = useState<"waiting" | "live" | "denied">("waiting");
 
   const navigate = useNavigate();
-  if (allUsers) {}
-  if (
-    meetingEnded ||
-    meetingjoined ||
-    localVideoStream ||
-    remoteTracks ||
-    onlineUsers ||
-    meetingInfo
-  ) {
-  }
 
   // const { socketInstance } = useSocket();
   const [socketInstance, setSocketInstance] = useState<Socket | null>(null);
@@ -118,13 +108,13 @@ function PatientDashboard() {
           roomName: roomName,
         });
       } else {
-        toast.error("Could not join the video session. You can stay in the waiting room or refresh.");
+        toast.error("Kunde inte ansluta till videosamtalet. Du kan stanna i väntrummet eller ladda om sidan.");
       }
     });
 
     socket.on("admission_denied", (data: { reason?: string }) => {
       setAdmissionPhase("denied");
-      toast.error(data?.reason || "Host declined entry");
+      toast.error(data?.reason || "Värden nekade inträde");
     });
 
     // Listen for 'init_response'

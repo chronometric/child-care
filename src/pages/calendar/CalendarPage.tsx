@@ -11,107 +11,6 @@ import EventDialog, { Action, IEvent } from "../../components/dashboard/EventDia
 import apiClient from "../../libs/api";
 import { getLocalDate, isDateEqual } from "../../libs/date";
 
-// Mock data for events
-// const eventData = [
-//   // List of events with date, time, and description
-//   {
-//     date: "14 Juni",
-//     time: {
-//       start: "10:00",
-//       end: "12:00",
-//     },
-//     weekday: "Mondag",
-//     targetDate: "02 Aug 2024",
-//     title: "Möte med Noah och Elsa",
-//     description:
-//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-//   },
-//   // More event objects...
-//   {
-//     date: "12 Juni",
-//     time: {
-//       start: "10:00",
-//       end: "12:00",
-//     },
-//     weekday: "Onsdag",
-//     targetDate: "02 Aug 2024",
-//     title: "Möte Elsa",
-//     description:
-//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-//   },
-//   {
-//     date: "11 Juni",
-//     time: {
-//       start: "10:00",
-//       end: "12:00",
-//     },
-//     weekday: "Onsdag",
-//     targetDate: "02 Aug 2024",
-//     title: "Noah rapport",
-//     description:
-//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-//   },
-//   {
-//     date: "4 Juni",
-//     time: {
-//       start: "10:00",
-//       end: "12:00",
-//     },
-//     weekday: "Onsdag",
-//     targetDate: "02 Aug 2024",
-//     title: "Noah och Elsa",
-//     description:
-//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-//   },
-//   {
-//     date: "1 Juni",
-//     time: {
-//       start: "10:00",
-//       end: "12:00",
-//     },
-//     weekday: "Onsdag",
-//     targetDate: "02 Aug 2024",
-//     title: "Möte och Elsa",
-//     description:
-//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-//   },
-//   {
-//     date: "21 Maj",
-//     time: {
-//       start: "10:00",
-//       end: "12:00",
-//     },
-//     weekday: "Onsdag",
-//     targetDate: "02 Aug 2024",
-//     title: "Möte och Anna",
-//     description:
-//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-//   },
-// ];
-
-// const todayEventData = [
-//   // List of today's events
-//   {
-//     title: "Möte med Noah och Elsa",
-//     description:
-//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-//     date: "02 Aug 2024",
-//   },
-//   // More today's event objects...
-//   {
-//     title: "Anna besök av personal",
-//     description:
-//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmo.",
-//     date: "02 Aug 2024",
-//   },
-//   {
-//     title: "Elsa besök av personal",
-//     description:
-//       "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmo.",
-//     date: "02 Aug 2024",
-//   },
-// ];
-
 const removePeriod = (source: string) => source.replace(/\./g, '')
 const monthTexts = [
   "Jan", // Januari
@@ -180,7 +79,6 @@ const CalendarPage = () => {
 
   const handleEventClick = (id: string) => () => {
     setActiveEvent(events.find(item => item.id === id) || null);
-    console.log(events.find(item => item.id === id))
     setAction(Action.Update);
     setEventDialogOpen(true);
   }
@@ -260,7 +158,7 @@ const CalendarPage = () => {
           <MonthCalendar selectedDay={currentDay} setSelectedDay={setCurrentDay} onOpenEventDialog={handleCreateEventClick} />
           <div className="grow p-4 pr-1.5 flex flex-col gap-2.5 bg-white rounded-xl overflow-y-auto">
             {/* Section heading for today's events */}
-            <p className="text-xl font-semibold">Dagens evenemang</p>
+            <p className="text-xl font-semibold">Dagens händelser</p>
             {/* List of today's events */}
             <div className="grow pr-2 overflow-y-auto">
               {todayEvents.map((eventItem, index) => (
@@ -273,7 +171,7 @@ const CalendarPage = () => {
         {/* Right section containing all events and pagination */}
         <div className="h-full grow p-4 pr-1.5 flex flex-col gap-2.5 bg-white rounded-xl overflow-y-auto">
           {/* Section heading for all events */}
-          <p className="text-xl font-semibold">Evenemang</p>
+          <p className="text-xl font-semibold">Alla händelser</p>
           <div className="grow flex flex-col pr-2 overflow-y-auto">
             {/* List of all events */}
             {memoEvents.slice((currentPage - 1) * 6, currentPage * 6).map((eventItem, index) => (

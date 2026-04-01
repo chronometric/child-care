@@ -7,26 +7,40 @@ import { twMerge } from 'tailwind-merge';
 import Button from '../../components/common/Button';
 import Input from '../../components/common/Input';
 import TradeMark from '../../components/user/TradeMark';
+import { FEATURES } from '../../config/features';
 import { useAppSelector } from '../../store';
 import apiClient from '../../libs/api';
 
 const PaymentDetail = () => {
-  // Initialize navigation and search parameters
   const navigate = useNavigate();
   const searchParams = useSearchParams();
-  const method = searchParams[0].get('method') || 'subscription'; // Default to "subscription" if method is not provided
+  const method = searchParams[0].get('method') || 'subscription';
 
   const createUser = useAppSelector((state) => state.auth.createUser);
 
-  // State to manage selected payment option
   const [option, setOption] = useState<string>('short-pay');
 
   const handleComplete = () => {
     apiClient.post('api/users/register', createUser).then(() => {
-      toast.success('Signup success.');
-      navigate('/room/create'); // Navigate to the room creation page
+      toast.success('Kontot har skapats.');
+      navigate('/room/create');
     });
   };
+
+  if (!FEATURES.commercialAuthFlows) {
+    return (
+      <div className="w-full h-full text-primary-text bg-white rounded-lg overflow-hidden">
+        <div className="py-8 px-8 h-full flex flex-col items-center justify-center gap-4 text-center max-w-lg mx-auto">
+          <TradeMark className="font-extrabold text-xl leading-6 !text-primary-background" />
+          <p className="font-extrabold text-xl">Betalningsflöde är inte aktiverat</p>
+          <p className="text-sm text-disabled-text">
+            Aktivera med VITE_ENABLE_COMMERCIAL_FLOWS=true när registrering via betalning ska användas.
+          </p>
+          <Button onClick={() => navigate('/auth/sign-in')}>Till inloggning</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full text-primary-text bg-white rounded-lg overflow-hidden">

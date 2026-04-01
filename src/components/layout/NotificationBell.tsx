@@ -70,7 +70,7 @@ function NotificationBell({ className }: { className?: string }) {
           setOpen(!open);
           if (!open) load();
         }}
-        aria-label="Notifications"
+        aria-label="Aviseringar"
       >
         <img src="/Notification.svg" alt="" />
         {unread > 0 && (
@@ -82,15 +82,15 @@ function NotificationBell({ className }: { className?: string }) {
       {open && (
         <div className="absolute right-0 top-full mt-1 w-80 max-h-96 overflow-y-auto bg-white rounded-xl shadow-lg border border-primary-border/20 z-50">
           <div className="p-2 flex justify-between items-center border-b border-light-background">
-            <span className="text-sm font-semibold">Notifications</span>
+            <span className="text-sm font-semibold">Aviseringar</span>
             {items.length > 0 && (
               <button type="button" className="text-xs text-primary-background" onClick={markAll}>
-                Mark all read
+                Markera alla som lästa
               </button>
             )}
           </div>
           {items.length === 0 ? (
-            <p className="p-4 text-sm text-disabled-text">No notifications</p>
+            <p className="p-4 text-sm text-disabled-text">Inga aviseringar</p>
           ) : (
             <ul>
               {items.map((n) => (

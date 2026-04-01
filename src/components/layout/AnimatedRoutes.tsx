@@ -17,7 +17,7 @@ import RoomPage from "../../pages/room/RoomDetail";
 import AIStructureList from "../../pages/room_create/AIStructureList";
 import CreateRoomMain from "../../pages/room_create/CreateRoomMain";
 import RoomCreateOnboardingMain from "../../pages/room_create/RoomCreateOnboardingMain";
-import SettingsPage from "../../pages/settings/SetttingsPage";
+import SettingsPage from "../../pages/settings/SettingsPage";
 import PatientLogin from "../../pages/auth/PatientLogin";
 import PaymentDetail from "../../pages/auth/PaymentDetail";
 import LoginWithBank from "../../pages/auth/LoginWithBank";

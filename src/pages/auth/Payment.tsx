@@ -3,14 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import TradeMark from '../../components/user/TradeMark';
 import Input from '../../components/common/Input';
 import Button from '../../components/common/Button';
+import { FEATURES } from '../../config/features';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { updateCreateUser } from '../../store/reducers/authReducer';
 
 const Payment = () => {
-  // Hook to programmatically navigate to different routes
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const createUser = useAppSelector((state) => state.auth.createUser);
+
+  if (!FEATURES.commercialAuthFlows) {
+    return (
+      <div className="w-full h-full grid grid-cols-1 rounded-lg overflow-hidden bg-white">
+        <div className="py-8 px-8 h-full flex flex-col items-center justify-center gap-4 text-center max-w-lg mx-auto">
+          <TradeMark className="font-extrabold text-xl leading-6 !text-primary-background" />
+          <p className="font-extrabold text-xl text-primary-text">Betalningsflöde är inte aktiverat</p>
+          <p className="text-sm text-disabled-text">
+            Fokus ligger på vård och möten. Sätt <code className="text-xs bg-light-background px-1 rounded">VITE_ENABLE_COMMERCIAL_FLOWS=true</code> när
+            fakturering och betalning ska visas.
+          </p>
+          <Button onClick={() => navigate('/auth/sign-in')}>Till inloggning</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-full grid grid-cols-2 rounded-lg overflow-hidden">
