@@ -1,5 +1,7 @@
 node_modules/
 a.conf
 dist/
+playwright-report/
+test-results/
 .env
 public/webviewer

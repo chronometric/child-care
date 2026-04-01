@@ -121,6 +121,7 @@ const Login = () => {
               {/* Login title */}
               <Input
                 name="email"
+                dataTestId="login-email"
                 placeholder="Användarnamn"
                 className="border border-primary-border/25 text-primary-placeholder bg-white/30" // Username input field
                 value={loginUser.email}
@@ -128,6 +129,8 @@ const Login = () => {
               />
               <Input
                 name="password"
+                type="password"
+                dataTestId="login-password"
                 placeholder="Lösenord"
                 className="border border-primary-border/25 text-primary-placeholder bg-white/30" // Password input field
                 value={loginUser.password}
@@ -139,7 +142,7 @@ const Login = () => {
               >
                 Har du glömd lösenordet? {/* Link for forgotten password */}
               </Link>
-              <Button onClick={handleSubmit}>Logga in</Button>
+              <Button data-testid="login-submit" onClick={handleSubmit}>Logga in</Button>
               <span className="text-primary-text/50 text-xs text-center">
                 Or use Bank ID {/* Option for logging in with Bank ID */}
               </span>

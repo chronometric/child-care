@@ -659,6 +659,7 @@ const RoomPage: React.FC = () => {
           <div className="flex gap-2 m-2">
             <Input
               name="message"
+              dataTestId="room-chat-input"
               value={message}
               placeholder="Skriv ett meddelande"
               className="flex-1 h-12 px-5 !py-[12.5px] bg-light-background border-none text-base"
@@ -666,6 +667,7 @@ const RoomPage: React.FC = () => {
               onKeyPress={handleKeyPress}
             />
             <ActionButton
+              data-testid="room-chat-send"
               className="bg-primary-background"
               onClick={sendMessage}
             >

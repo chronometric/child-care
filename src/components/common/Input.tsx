@@ -20,6 +20,8 @@ interface InputProps {
   onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
 
   onKeyPress?: (event: KeyboardEvent<HTMLInputElement>) => void;
+  /** E2E / automation */
+  dataTestId?: string;
 }
 
 /**
@@ -45,6 +47,7 @@ function Input({
   className = "",
   onChange = () => { },
   onKeyPress = () => { },
+  dataTestId,
 }: InputProps) {
   // Determines the CSS class for the input size based on the size prop
   const sizeClass =
@@ -58,6 +61,7 @@ function Input({
     <input
       type={type}
       name={name}
+      data-testid={dataTestId}
       placeholder={placeholder}
       value={value}
       className={twMerge(

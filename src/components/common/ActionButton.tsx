@@ -6,6 +6,7 @@ interface ActionButtonProps extends PropsWithChildren {
   className?: string;
   // Optional click handler function
   onClick?: () => void;
+  "data-testid"?: string;
 }
 
 /**
@@ -21,9 +22,11 @@ function ActionButton({
   className = "",
   children,
   onClick,
+  "data-testid": dataTestId,
 }: ActionButtonProps) {
   return (
     <span
+      data-testid={dataTestId}
       // Merge default Tailwind styles with any additional classes passed via className prop
       className={twMerge(
         "w-12 h-12 flex items-center justify-center rounded-lg hover:opacity-85 active:opacity-70 cursor-pointer",

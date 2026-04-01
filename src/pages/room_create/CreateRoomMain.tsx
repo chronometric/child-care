@@ -21,6 +21,7 @@ const CreateRoomMain = () => {
         <TradeMark className="text-[32px] font-extrabold leading-10 !text-primary-background" />
         {/* Button to navigate to the onboarding page */}
         <Button
+          data-testid="create-room-start"
           className="h-14 py-4 px-[30px] flex gap-x-2"
           onClick={() => {
             navigate("/room/create/onboarding");
