@@ -1,6 +1,6 @@
 # Child Care — Web Application (Frontend)
 
-A React single-page application for child-care telehealth: doctors manage sessions, patients and guests join video rooms, administrators oversee organizations, and workflows support scheduling, files, and post-session AI-assisted documentation.
+A React single-page application for child-care telehealth. Clinicians manage sessions and documentation; patients and guests join secure video rooms; administrators oversee organizations. The app covers scheduling, files, in-room chat and waiting-room flows, and optional AI-assisted session documentation aligned with clinical governance.
 
 ## Tech stack
 
@@ -10,25 +10,28 @@ A React single-page application for child-care telehealth: doctors manage sessio
 | State | Redux Toolkit |
 | Routing | React Router v6 |
 | HTTP | Axios (shared client with auth interceptors) |
-| Realtime | Socket.IO client (waiting room, in-room signaling) |
-| Video | Metered (via `MeetingContext` / SDK) |
-| Build | Vite |
+| Realtime | Socket.IO client (waiting room, in-room chat, presence) |
+| Video | Metered (WebRTC rooms via app context / SDK) |
+| Build | Vite 6 |
+| E2E | Playwright |
 
 ## Prerequisites
 
 - **Node.js** 18+ (LTS recommended)
-- **npm** (or compatible package manager)
-- Running **backend API** (see the companion `child-care-backend` repository) and a configured **Metered** account for WebRTC rooms
+- **npm** (or pnpm/yarn with equivalent scripts)
+- Running the **child-care-backend** service (or your deployed API) with matching JWT and Socket.IO configuration
+- A **Metered** account for WebRTC rooms (credentials live on the backend; the client uses the backend URL only)
 
 ## Environment variables
 
-Copy **`.env.example`** to `.env` and set values (or configure the same keys in your host):
+Copy `.env.example` to `.env`. Vite exposes only variables prefixed with `VITE_`.
 
 | Variable | Required | Description |
-|----------|----------|---------------|
-| `VITE_BACKEND_URL` | Yes | Base URL of the API, e.g. `http://localhost:8000` (no trailing slash required for typical Axios usage). Used for REST calls and Socket.IO. |
+|----------|----------|-------------|
+| `VITE_BACKEND_URL` | Yes | Base URL of the API (e.g. `http://localhost:8000`). Used for REST calls and Socket.IO; no trailing slash required. |
+| `VITE_ENABLE_COMMERCIAL_FLOWS` | No | Set to `true` to surface payment / registration billing flows when implemented. |
 
-Vite exposes only variables prefixed with `VITE_`.
+Never commit `.env` or production secrets.
 
 ## Install and run
 
@@ -37,46 +40,73 @@ npm install
 npm run dev
 ```
 
-The dev server listens on all interfaces (`0.0.0.0`) by default—adjust in `vite.config.ts` if needed.
+The dev server binds to `0.0.0.0` so other devices on the network can reach it during testing. Adjust `vite.config.ts` if you need a fixed port.
 
-### Other scripts
+### Scripts
 
 | Command | Purpose |
 |---------|---------|
-| `npm run build` | Typecheck and production build to `dist/` |
-| `npm run preview` | Preview the production build locally |
-| `npm run lint` | ESLint on `ts` / `tsx` |
-| `npm run start` | Serve `dist` (e.g. for simple static hosting) |
+| `npm run dev` | Development server with HMR |
+| `npm run build` | TypeScript check + production build to `dist/` |
+| `npm run preview` | Local preview of the production build |
+| `npm run lint` | ESLint on `.ts` / `.tsx` |
+| `npm run start` | Static serve of `dist/` (e.g. `serve -s dist -l 5000`) |
+| `npm run test:e2e` | Playwright end-to-end tests |
+| `npm run test:e2e:ui` | Playwright with UI mode |
 
-## Application roles and main routes
+### End-to-end tests
 
-- **Doctor (user)** — Authenticated main app: dashboard, rooms list, calendar, files, patient records, room detail (video + waiting-room controls + post-meeting AI notes), room creation wizard.
-- **Patient** — Enters via patient login / deep link; **waiting room** until the host admits; then joins the Metered session.
-- **Guest** — Similar flow with guest credentials / link; limited scope.
-- **Admin** — Separate sign-in; company overview, user directory, system metrics, AI-related settings (backed by admin APIs).
+Playwright targets Chromium by default. Install browsers once:
 
-Routes are defined in `src/routes/AppRoutes.tsx` and re-exported by `src/routes/index.ts` and `src/components/layout/AnimatedRoutes.tsx`.
+```bash
+npx playwright install chromium
+```
 
-## Project layout (high level)
+Optional environment variables for tests that perform a real login:
+
+| Variable | Description |
+|----------|-------------|
+| `E2E_USER_EMAIL` | Doctor account email |
+| `E2E_USER_PASSWORD` | Doctor account password |
+| `PLAYWRIGHT_BASE_URL` | Override base URL (default `http://127.0.0.1:5173`) |
+| `E2E_SKIP_WEBSERVER` | Set to skip auto-starting Vite (if you run it yourself) |
+
+Tests under `e2e/` cover sign-in, room creation entry, and room chat UI. Login-dependent specs are skipped when credentials are not set.
+
+## Roles and main routes
+
+| Role | Entry | Capabilities |
+|------|--------|----------------|
+| **Clinician** | `/auth/sign-in` | Dashboard, rooms, calendar, files, patients, settings, room detail (video, waiting room, chat, post-session AI documentation). |
+| **Patient** | Patient sign-in / links | Waiting room until admitted; then Metered session. |
+| **Guest** | Guest sign-in | Limited scope; waiting room and session flows. |
+| **Admin** | `/admin/sign-in` | Company overview, users, system metrics, AI settings, governance audit (backed by admin APIs). |
+| **Student / portal** | `/student` | Upcoming sessions and optional shared documentation when enabled. |
+
+Canonical routing lives in `src/routes/AppRoutes.tsx`.
+
+## Project layout
 
 ```
 src/
-  components/     # Shared UI, layout, room widgets
-  pages/          # Route-level screens (auth, dashboard, room, admin, patients, …)
+  components/     # Shared UI, layout, room widgets, dialogs
+  pages/          # Screens: auth, dashboard, room, admin, calendar, files, …
   store/          # Redux slices
-  libs/           # API client, helpers
-  config/         # Environment-driven endpoints
+  hooks/          # Reusable hooks (e.g. Web Speech transcript)
+  libs/           # API client, token helpers
+  routes/         # Route tree and animated transitions
 ```
 
 ## API and realtime
 
-- REST calls use `src/libs/api.ts` with `VITE_BACKEND_URL` as `baseURL`. JWT is attached when present in `localStorage`.
-- Socket.IO connects to the same origin as `VITE_BACKEND_URL` with path `/socket.io/` (see patient/guest/room pages).
+- **REST:** `src/libs/api.ts` uses `VITE_BACKEND_URL` as `baseURL`. JWT is sent when present (see `libs/token` / `localStorage`).
+- **Socket.IO:** Connects to the same host as `VITE_BACKEND_URL` with path `/socket.io/` and transports appropriate for your deployment.
 
-## Security notes
+## Security and production
 
-- Never commit `.env` or production secrets.
-- Ensure HTTPS in production for auth cookies/tokens and camera/microphone permissions.
+- Serve the app over **HTTPS** in production for tokens, camera, and microphone.
+- Restrict CORS and API exposure on the backend; do not expose admin or file endpoints publicly without authentication.
+- Keep dependency updates on a regular cadence (`npm audit` as a starting point).
 
 ## License
 
